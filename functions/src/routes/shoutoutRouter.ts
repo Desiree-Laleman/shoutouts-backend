@@ -14,30 +14,17 @@ const errorResponse = (error: any, res: any) => {
 // get all Shoutouts
 shoutoutRouter.get("/shoutouts", async (req, res) => {
   try {
+    const to: string | null = (req.query.to as string) || null;
+    const name: string | null = (req.query.name as string) || null;
+
+    const query: any = {
+      ...(to ? { to: to } : {}),
+      ...(name ? { $or: [{ to: name }, { from: name }] } : {}),
+    };
     const client = await getClient();
-    const cursor = client.db().collection<Shoutout>("shoutouts").find();
+    const cursor = client.db().collection<Shoutout>("shoutouts").find(query);
     const results = await cursor.toArray();
     res.json(results);
-  } catch (err) {
-    errorResponse(err, res);
-  }
-});
-
-// get Shoutout by User
-shoutoutRouter.get("/shoutouts/:name", async (req, res) => {
-  const name = req.params.name;
-  try {
-    const client = await getClient();
-    const shoutouts: Shoutout[] = await client
-      .db()
-      .collection<Shoutout>("shoutouts")
-      .find({ to: name })
-      .toArray();
-    if (shoutouts) {
-      res.status(200).json(shoutouts);
-    } else {
-      res.status(404).json({ message: "Not Found" });
-    }
   } catch (err) {
     errorResponse(err, res);
   }
